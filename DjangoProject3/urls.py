@@ -1,31 +1,46 @@
-"""
-URL configuration for DjangoProject3 project.
-
-The `urlpatterns` list routes URLs to views. For more information please see:
-    https://docs.djangoproject.com/en/5.2/topics/http/urls/
-Examples:
-Function views
-    1. Add an import:  from my_app import views
-    2. Add a URL to urlpatterns:  path('', views.home, name='home')
-Class-based views
-    1. Add an import:  from other_app.views import Home
-    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
-Including another URLconf
-    1. Import the include() function: from django.urls import include, path
-    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
-"""
 from django.contrib import admin
 from django.urls import path, include
-
-from myproject import carts, orders
-from myproject.carts import urls
+from django.conf import settings
+from django.conf.urls.static import static
+from django.contrib.auth import views as auth_views
+from DjangoProject3.accounts.views import home, cart_view, register_view, custom_login_view
+from DjangoProject3.trees.views_template import tree_list, create_tree, update_tree, delete_tree, view_cart, \
+    add_to_cart, update_cart_quantity, clear_cart, rate_tree
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
+                  path('admin/', admin.site.urls),
 
-    path('api/accounts/', include('myproject.accounts.urls')),
-    path('api/carts/', include('myproject.carts.urls')),
-    path('api/orders/', include('myproject.orders.urls')),
-    path('api/seasons/', include('myproject.seasons.urls')),
-    path('api/trees/', include('myproject.trees.urls')),
-]
+                  # API endpoints
+                  path('api/accounts/', include('DjangoProject3.accounts.urls')),
+                  path('api/carts/', include('DjangoProject3.carts.urls')),
+                  path('api/orders/', include('DjangoProject3.orders.urls')),
+                  path('api/seasons/', include('DjangoProject3.seasons.urls')),
+                  path('api/trees/', include('DjangoProject3.trees.urls')),
+
+                  # Frontend views
+                  path('', home, name='home'),
+                  path('cart/', cart_view, name='cart'),
+                  path('register/', register_view, name='register'),
+
+                  # Auth endpoints - updated login
+                  path('login/', custom_login_view, name='login'),
+                  path('logout/', auth_views.LogoutView.as_view(), name='logout'),
+                  path('password-reset/', auth_views.PasswordResetView.as_view(), name='password_reset'),
+
+                  # App includes
+                  path('seasons/', include('DjangoProject3.seasons.urls')),
+                  path('trees/', include([
+                      path('', tree_list, name='tree_list'),
+                      path('create/', create_tree, name='create_tree'),
+                      path('update/<int:t_id>/', update_tree, name='update_tree'),
+                      path('delete/<int:t_id>/', delete_tree, name='delete_tree'),
+                      path('cart/', include([
+                          path('', view_cart, name='view_cart'),
+                          path('add/<int:t_id>/', add_to_cart, name='add_to_cart'),
+                          path('update/<int:t_id>/<str:action>/', update_cart_quantity, name='update_cart'),
+                          path('clear/', clear_cart, name='clear_cart'),
+                      ])),
+                      path('rate/', rate_tree, name='rate_tree'),
+                  ])),
+path('plant-guide/', include(('DjangoProject3.seasons.urls', 'seasons'), namespace='seasons')),
+              ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
